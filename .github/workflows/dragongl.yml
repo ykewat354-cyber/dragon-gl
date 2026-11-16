@@ -1,0 +1,71 @@
+name: Build DragonGL
+
+on:
+  push:
+    branches: [ dragon ]
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+env:
+  DRAGONGL_VERSION: 2.0.0-dragon.1
+  NDK_VERSION: 27.3.13750724
+  ABI: arm64-v8a
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 1
+
+      - name: Checkout required submodules
+        run: |
+          git submodule update --init --recursive -- \
+            MobileGlues-cpp/3rdparty/glslang \
+            MobileGlues-cpp/3rdparty/SPIRV-Cross \
+            MobileGlues-cpp/3rdparty/xxhash \
+            MobileGlues-cpp/include/ska
+
+      - name: Set up Android SDK and NDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'ndk;${{ env.NDK_VERSION }}'
+
+      - name: Build libmobileglues.so
+        run: |
+          NDK_DIR="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
+          test -f "$NDK_DIR/build/cmake/android.toolchain.cmake"
+          cmake -S MobileGlues-cpp -B build \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK_DIR/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI="$ABI" \
+            -DANDROID_PLATFORM=android-21 \
+            -DANDROID_STL=c++_static \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target mobileglues -j"$(nproc)"
+          "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" \
+            --strip-unneeded build/libmobileglues.so
+          ls -lh build/libmobileglues.so
+
+      - name: Package AAR
+        run: |
+          rm -rf aar
+          cp -a aar-template aar
+          mkdir -p "aar/jni/$ABI" aar/assets/licenses
+          cp build/libmobileglues.so "aar/jni/$ABI/"
+          cp LICENSE aar/assets/licenses/mobileglues-lgplv2.1-license.txt
+          : > aar/R.txt
+          mkdir -p /tmp/emptyjar
+          printf 'DragonGL\n' > /tmp/emptyjar/README.txt
+          (cd /tmp/emptyjar && zip -q -r "$GITHUB_WORKSPACE/aar/classes.jar" .)
+          (cd aar && zip -q -r "$GITHUB_WORKSPACE/DragonGL-$DRAGONGL_VERSION.aar" .)
+          unzip -l "DragonGL-$DRAGONGL_VERSION.aar"
+
+      - name: Upload AAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: DragonGL-aar
+          path: DragonGL-${{ env.DRAGONGL_VERSION }}.aar

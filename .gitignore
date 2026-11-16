@@ -1,4 +1,6 @@
 /build
+/aar/
+DragonGL-*.aar
 .cxx/
 .idea/
 src/main/cpp/.vs

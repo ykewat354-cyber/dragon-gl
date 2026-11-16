@@ -15,7 +15,8 @@ translation layer that lets Minecraft: Java Edition run on Android GLES drivers.
 
 DragonGL is where Dragon Launcher-specific renderer work happens:
 
-- reproducible arm64 build from source instead of an opaque prebuilt AAR;
+- reproducible arm64/armeabi-v7a/x86/x86_64 build from source instead of an
+  opaque prebuilt AAR;
 - stripped release binaries;
 - launcher-side frame pacing and surface configuration;
 - measured MobileGlues multi-draw / cache / extension tuning;

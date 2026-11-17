@@ -725,7 +725,9 @@ static bool prepare_indirect_buffer(const GLsizei* counts, GLenum type, const vo
     // thread_local for the same reason as mg_zero_basevertex: nothing in this
     // file takes a lock, and two threads can each have a current context.
     static thread_local std::vector<draw_elements_indirect_command_t> staged;
-    staged.resize(static_cast<size_t>(primcount));
+    // Retain the constructed tail; only the active prefix is filled and uploaded.
+    if (staged.size() < static_cast<size_t>(primcount))
+        staged.resize(static_cast<size_t>(primcount));
     draw_elements_indirect_command_t* pcmds = staged.data();
 
     for (GLsizei i = 0; i < primcount; ++i) {

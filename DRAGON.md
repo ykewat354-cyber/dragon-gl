@@ -13,6 +13,17 @@ translation layer that lets Minecraft: Java Edition run on Android GLES drivers.
 
 ## Why a fork
 
+### 2.0.0-dragon.3
+
+- Port upstream MobileGlues #60 (`0f1e10b53b2d5d0c474dbe1af3554188b52ae51d`):
+  retain the indirect staging vector's constructed tail instead of rebuilding it
+  when draw counts oscillate. Active upload length and rendering semantics are unchanged.
+- `scripts/check-staging.py` compiles the production staging block and verifies
+  allocation work, growth/zero counts and active-prefix checksums. RED reproduced
+  in Actions `44044622957` before the patch.
+- No graphics quality reduction or device-model condition. Gameplay/thermal gains
+  require device A/B; the host allocation test is not a game benchmark.
+
 DragonGL is where Dragon Launcher-specific renderer work happens:
 
 - reproducible arm64/armeabi-v7a/x86/x86_64 build from source instead of an
